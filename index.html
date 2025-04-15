@@ -1,0 +1,159 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Calculadora Nutricional</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    label, select, input { display: block; margin: 10px 0; }
+    .result { margin-top: 20px; font-weight: bold; white-space: pre-line; }
+  </style>
+</head>
+<body>
+  <h1>Calculadora Nutricional</h1>
+
+  <label for="sexo">Sexo:</label>
+  <select id="sexo">
+    <option value="masculino">Masculino</option>
+    <option value="femenino">Femenino</option>
+  </select>
+
+  <label for="peso">Peso (kg):</label>
+  <input type="number" id="peso">
+
+  <label for="altura">Altura (cm):</label>
+  <input type="number" id="altura">
+
+  <label for="edad">Edad (años):</label>
+  <input type="number" id="edad">
+
+  <label for="actividad">Nivel de Actividad Física:</label>
+  <select id="actividad">
+    <option value="1.2">Sedentario</option>
+    <option value="1.375">Ligeramente activo</option>
+    <option value="1.55">Moderadamente activo</option>
+    <option value="1.725">Muy activo</option>
+    <option value="1.9">Extremadamente activo</option>
+  </select>
+
+  <label for="estres">Factor de Estrés:</label>
+  <select id="estres">
+    <option value="1.0">Sin estrés</option>
+    <option value="1.2">Cirugía menor / infección leve</option>
+    <option value="1.4">Trauma moderado</option>
+    <option value="1.6">Sepsis / quemaduras < 40%</option>
+    <option value="1.8">Quemaduras > 40%</option>
+  </select>
+
+  <label for="codo">Altura del codo al talón (cm) – para estimar talla en postrados:</label>
+  <input type="number" id="codo">
+
+  <label for="circumbrazo">Circunferencia del brazo (cm) – para estimar peso en postrados:</label>
+  <input type="number" id="circumbrazo">
+
+  <label for="cuello">Circunferencia del cuello (cm):</label>
+  <input type="number" id="cuello">
+
+  <label for="cintura">Circunferencia de la cintura (cm):</label>
+  <input type="number" id="cintura">
+
+  <label for="cadera" id="labelCadera">Circunferencia de la cadera (cm) – solo mujeres:</label>
+  <input type="number" id="cadera">
+
+  <button onclick="calcularTodo()">Calcular</button>
+
+  <div class="result" id="resultado"></div>
+
+  <script>
+    function calcularTodo() {
+      const sexo = document.getElementById('sexo').value;
+      let peso = parseFloat(document.getElementById('peso').value);
+      let altura = parseFloat(document.getElementById('altura').value);
+      const edad = parseFloat(document.getElementById('edad').value);
+      const actividad = parseFloat(document.getElementById('actividad').value);
+      const estres = parseFloat(document.getElementById('estres').value);
+      const codo = parseFloat(document.getElementById('codo').value);
+      const circumbrazo = parseFloat(document.getElementById('circumbrazo').value);
+      const cuello = parseFloat(document.getElementById('cuello').value);
+      const cintura = parseFloat(document.getElementById('cintura').value);
+      const cadera = parseFloat(document.getElementById('cadera').value);
+
+      const actividadText = document.getElementById('actividad').selectedOptions[0].text;
+      const estresText = document.getElementById('estres').selectedOptions[0].text;
+
+      let resultado = "";
+
+      if (isNaN(altura) && !isNaN(codo)) {
+        if (sexo === 'masculino') {
+          altura = 64.19 + (2.02 * codo);
+        } else {
+          altura = 84.88 + (1.83 * codo);
+        }
+        resultado += `Talla estimada (cm): ${altura.toFixed(2)}\n`;
+      }
+
+      if (isNaN(peso) && !isNaN(circumbrazo) && !isNaN(altura)) {
+        if (sexo === 'masculino') {
+          peso = (1.73 * circumbrazo) + (0.98 * altura) - 62.35;
+        } else {
+          peso = (1.27 * circumbrazo) + (0.87 * altura) - 62.07;
+        }
+        resultado += `Peso estimado (kg): ${peso.toFixed(2)}\n`;
+      }
+
+      let TMB;
+      if (sexo === 'masculino') {
+        TMB = (10 * peso) + (6.25 * altura) - (5 * edad) + 5;
+      } else {
+        TMB = (10 * peso) + (6.25 * altura) - (5 * edad) - 161;
+      }
+
+      const GET = TMB * actividad * estres;
+
+      const altura_m = altura / 100;
+      const IMC = peso / (altura_m * altura_m);
+
+      resultado += `\nTMB: ${TMB.toFixed(2)} kcal/día\n`;
+      resultado += `GET estimado: ${GET.toFixed(2)} kcal/día\n`;
+      resultado += `Nivel de actividad: ${actividadText} (Factor: ${actividad})\n`;
+      resultado += `Nivel de estrés: ${estresText} (Factor: ${estres})\n`;
+      resultado += `IMC: ${IMC.toFixed(2)}\n`;
+
+      if (IMC < 18.5) resultado += "Clasificación: Bajo peso\n";
+      else if (IMC < 25) resultado += "Clasificación: Normal\n";
+      else if (IMC < 30) resultado += "Clasificación: Sobrepeso\n";
+      else resultado += "Clasificación: Obesidad\n";
+
+      let grasaCorporal = null;
+      if (sexo === 'masculino' && !isNaN(cuello) && !isNaN(cintura) && !isNaN(altura)) {
+        grasaCorporal = 495 / (1.0324 - 0.19077 * Math.log10(cintura - cuello) + 0.15456 * Math.log10(altura)) - 450;
+      } else if (sexo === 'femenino' && !isNaN(cuello) && !isNaN(cintura) && !isNaN(cadera) && !isNaN(altura)) {
+        grasaCorporal = 495 / (1.29579 - 0.35004 * Math.log10(cintura + cadera - cuello) + 0.22100 * Math.log10(altura)) - 450;
+      }
+
+      if (grasaCorporal !== null) {
+        resultado += `Porcentaje de grasa corporal: ${grasaCorporal.toFixed(2)}%\n`;
+
+        let recomendacion = "";
+        if (sexo === 'masculino') {
+          if (grasaCorporal < 6) recomendacion = "Grasa corporal muy baja (atleta extremo o riesgo clínico)";
+          else if (grasaCorporal < 14) recomendacion = "Nivel atlético o fitness";
+          else if (grasaCorporal < 18) recomendacion = "Saludable";
+          else if (grasaCorporal < 25) recomendacion = "Aceptable";
+          else recomendacion = "Alto – considerar intervención";
+        } else {
+          if (grasaCorporal < 14) recomendacion = "Grasa corporal muy baja (atleta extremo o riesgo clínico)";
+          else if (grasaCorporal < 21) recomendacion = "Nivel atlético o fitness";
+          else if (grasaCorporal < 25) recomendacion = "Saludable";
+          else if (grasaCorporal < 32) recomendacion = "Aceptable";
+          else recomendacion = "Alto – considerar intervención";
+        }
+        resultado += `Recomendación: ${recomendacion}\n`;
+      }
+
+      document.getElementById('resultado').innerText = resultado;
+    }
+  </script>
+</body>
+</html>
